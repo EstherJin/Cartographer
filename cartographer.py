@@ -286,7 +286,7 @@ class GUI(tk.Frame):
             for j in range(width):
                 img = self.canvas.create_image(50+(i)*32,50+(j)*32, anchor="nw", image=self.parent.tile_imgs[0])
                 self.tile_refs[i].append(img)
-                self.canvas.tag_bind(self.tile_refs[i][j], '<ButtonPress-1>', self.first_helper(i,j))
+                #self.canvas.tag_bind(self.tile_refs[i][j], '<ButtonPress-1>', self.first_helper(i,j))
 
         self.ob_refs = []
         for i in range(length):
@@ -295,7 +295,7 @@ class GUI(tk.Frame):
                 img = self.canvas.create_image(50+16+(i)*32,50+25+(j)*32, anchor="s", image=self.parent.obstacle_imgs[0])
                 self.canvas.tag_raise(img)
                 self.ob_refs[i].append(img)
-                self.canvas.tag_bind(self.ob_refs[i][j], '<ButtonPress-1>', self.first_helper(i,j))
+                #self.canvas.tag_bind(self.ob_refs[i][j], '<ButtonPress-1>', self.first_helper(i,j))
 
         for j in range(width):
             img_l = self.canvas.create_image(18,50+(j)*32, anchor="nw", image=self.parent.wall_imgs[1])
@@ -314,6 +314,28 @@ class GUI(tk.Frame):
             self.canvas.tag_raise(dec_l)
             self.dec_refs[3].append(dec_l)
             self.canvas.tag_bind(self.dec_refs[3][j], '<ButtonPress-1>', self.second_helper(3,j))
+
+        self.mouse_pressed = False
+        self.canvas.bind("<ButtonPress-1>", self.mouseDown)
+        self.canvas.bind("<ButtonRelease-1>", self.mouseUp)
+        self.canvas.bind('<Motion>', self.poll)
+
+    def mouseDown(self, event):
+        self.mouse_pressed = True
+        self.poll(event)
+
+    def mouseUp(self, event):
+        self.mouse_pressed = False
+
+    def poll(self, event):
+        if self.mouse_pressed:
+            x = event.x
+            y = event.y
+            realx = (x - 50) // 32
+            realy = (y - 50) // 32
+
+            if realx >= 0 and realx < self.length and  realy >= 0 and realy < self.width:
+                self.buttonStuff(realx, realy)
 
     def saveys(self):
         csv_name = self.fn_field.get()
