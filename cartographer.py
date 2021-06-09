@@ -1,8 +1,33 @@
 import csv
 import os
+import os.path
 import tkinter as tk
 from tkinter import messagebox
 from PIL import Image, ImageTk
+
+def replace_gui(file_name):
+    global root, gui
+    with open(file_name, encoding='utf-8-sig') as csv_file:
+        csv_reader = list(csv.reader(csv_file, delimiter=','))
+        length = 0
+        for row in csv_reader:
+            length += 1
+        length = length - 7
+        width = 0
+
+        for col in csv_reader[0]:
+            width += 1
+
+        gui = GUI(root, width, length)
+        for i in range(width):
+            gui.wallButtonStuff(0, i, walldec=int(csv_reader[length][i]))
+            gui.wallButtonStuff(2, i, walldec=int(csv_reader[length+1][i]))
+
+        for i in range(length):
+            gui.wallButtonStuff(1, i, walldec=int(csv_reader[length+2][i]))
+            gui.wallButtonStuff(3, i, walldec=int(csv_reader[length+3][i]))
+        gui.updateFloors(csv_reader[:length])
+
 
 def tint_image(image, tint_color):
     new_img = Image.new('RGB', image.size, tint_color)
@@ -195,6 +220,11 @@ class GUI(tk.Frame):
         self.walldec_text = tk.Label(self.parent, text="Wall:").place(x=400,y=10)
         self.walldec_dropdown = tk.OptionMenu(self.parent, self.walldec, *walldecs).place(x=430,y=10)
 
+        self.new_text = tk.Label(self.parent, text="File Name:").place(x=570,y=10)
+        self.new_field = tk.Entry(self.parent)
+        self.new_field.place(x=630,y=10)
+        self.new_csv = tk.Button(self.parent, text='Upload New CSV', command=self.upload_csv).place(x=720,y=10)
+
         self.fn_text = tk.Label(self.parent, text="File Name:").place(x=10,y=50)
         self.fn_field = tk.Entry(self.parent)
         self.fn_field.place(x=70,y=50)
@@ -337,6 +367,13 @@ class GUI(tk.Frame):
             if realx >= 0 and realx < self.length and  realy >= 0 and realy < self.width:
                 self.buttonStuff(realx, realy)
 
+    def upload_csv(self):
+        csv_name = self.new_field.get()
+        if os.path.isfile(csv_name):
+            replace_gui(csv_name)
+        else:
+            messagebox.showwarning("Error", "File Non Existent")
+
     def saveys(self):
         csv_name = self.fn_field.get()
         if csv_name == '':
@@ -362,9 +399,13 @@ class GUI(tk.Frame):
         messagebox.showwarning("Error Check Results", error)
         self.updateWholeGUI(False)
 
-    def wallButtonStuff(self, rotation, i):
-        walldec_val = self.walldec.get()
-        walldec_int = int(walldec_val.partition("-")[0])
+    def wallButtonStuff(self, rotation, i, walldec=None):
+        if walldec == None:
+            walldec_val = self.walldec.get()
+            walldec_int = int(walldec_val.partition("-")[0])
+        else:
+            walldec_int = walldec
+
         if rotation == 0:
             self.grid.wall_row[0][i] = walldec_int
         elif rotation == 1:
@@ -374,6 +415,21 @@ class GUI(tk.Frame):
         elif rotation == 3:
             self.grid.wall_col[1][i] = walldec_int
         self.updateWallGUI(rotation, i)
+
+    def updateFloors(self, array):
+        row_counter = 0
+        for row in array:
+            col_counter = 0
+            for cell in row:
+                tile_int = int(cell[0])
+                ob_int = int(cell[1:])
+
+                self.grid.grid[col_counter][row_counter].modify_cell_tile(tile_int)
+                self.grid.grid[col_counter][row_counter].modify_cell_decorator(ob_int)
+
+                col_counter += 1
+            row_counter += 1
+        self.updateWholeGUI(True)
 
     def buttonStuff(self, leng, wid):
         tile_val = self.tile.get()
@@ -425,6 +481,7 @@ class GUI(tk.Frame):
 
 
 if __name__ == "__main__":
+    global root, gui
     root = tk.Tk()
-    GUI(root,20,12)
+    gui = GUI(root,20,12)
     root.mainloop()
