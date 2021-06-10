@@ -1,3 +1,4 @@
+import argparse
 import csv
 import os
 import os.path
@@ -9,6 +10,7 @@ def replace_gui(file_name):
     global root, gui
     with open(file_name, encoding='utf-8-sig') as csv_file:
         csv_reader = list(csv.reader(csv_file, delimiter=','))
+        csv_reader = csv_reader[1:]
         length = 0
         for row in csv_reader:
             length += 1
@@ -161,7 +163,7 @@ class Grid:
         return False, ret_err
 
     def to_csv(self, file_name, level, room_type):
-        with open(file_name, mode='w', newline='') as output_file:
+        with open(file_name, mode='w', newline='', encoding='utf-8-sig') as output_file:
             output_writer = csv.writer(output_file, delimiter=',')
             output_writer.writerow([self.length, self.width])
 
@@ -417,12 +419,19 @@ class GUI(tk.Frame):
         self.updateWallGUI(rotation, i)
 
     def updateFloors(self, array):
+        tile_count = len(self.parent.tile_imgs)
+        ob_count = len(self.parent.obstacle_imgs)
+        
         row_counter = 0
         for row in array:
             col_counter = 0
             for cell in row:
                 tile_int = int(cell[0])
                 ob_int = int(cell[1:])
+
+                if tile_int > tile_count or ob_int >= ob_count:
+                    messagebox.showwarning("Error", "Problem importing file: Update images Folder")
+                    return
 
                 self.grid.grid[col_counter][row_counter].modify_cell_tile(tile_int)
                 self.grid.grid[col_counter][row_counter].modify_cell_decorator(ob_int)
@@ -481,7 +490,12 @@ class GUI(tk.Frame):
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("length", type=int, help="length of room", default=20, nargs='?')
+    parser.add_argument("width", type=int, help="width of room", default=12, nargs='?')
+    args = parser.parse_args()
+
     global root, gui
     root = tk.Tk()
-    gui = GUI(root,20,12)
+    gui = GUI(root, args.length, args.width)
     root.mainloop()
