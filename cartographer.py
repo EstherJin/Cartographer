@@ -35,41 +35,14 @@ def tint_image(image, tint_color):
     new_img = Image.new('RGB', image.size, tint_color)
     return Image.blend(image, new_img, 0.5)
 
-def get_tiles():
-    basepath = './images/tiles'
-    tiles = []
+def get_image_file(image_file):
+    basepath = image_file
+    images = []
     with os.scandir(basepath) as entries:
         for entry in entries:
             if entry.is_file():
-                tiles.append(entry.name.partition(".")[0])
-    return tiles
-
-def get_obstacles():
-    basepath = './images/obstacles'
-    obstacles = []
-    with os.scandir(basepath) as entries:
-        for entry in entries:
-            if entry.is_file():
-                obstacles.append(entry.name.partition(".")[0])
-    return obstacles
-
-def get_spawn():
-    basepath = './images/spawn'
-    spawn = []
-    with os.scandir(basepath) as entries:
-        for entry in entries:
-            if entry.is_file():
-                spawn.append(entry.name.partition(".")[0])
-    return spawn
-
-def get_walldecs():
-    basepath = './images/walls/decorations'
-    walldecs = []
-    with os.scandir(basepath) as entries:
-        for entry in entries:
-            if entry.is_file():
-                walldecs.append(entry.name.partition(".")[0])
-    return walldecs
+                images.append(entry.name.partition(".")[0])
+    return images
 
 class Cell:
     def __init__(self):
@@ -220,21 +193,21 @@ class GUI(tk.Frame):
         self.length = length
         self.width = width
 
-        spawns = get_spawn()
+        spawns = get_image_file('./images/spawn')
 
-        tiles = get_tiles()
+        tiles = get_image_file('./images/tiles')
         self.tile = tk.StringVar(self.parent)
         self.tile.set(tiles[0])
         self.tile_text = tk.Label(self.parent, text="Tile:").place(x=10,y=10)
         self.tile_dropdown = tk.OptionMenu(self.parent, self.tile, "No Change", *tiles).place(x=40,y=10)
 
-        obstacles = get_obstacles()
+        obstacles = get_image_file('./images/obstacles')
         self.obstacle = tk.StringVar(self.parent)
         self.obstacle.set(obstacles[0])
         self.ob_text = tk.Label(self.parent, text="Obstacle:").place(x=190,y=10)
         self.obstacle_dropdown = tk.OptionMenu(self.parent, self.obstacle, "No Change", *obstacles).place(x=250,y=10)
 
-        walldecs = get_walldecs()
+        walldecs = get_image_file('./images/walls/decorations')
         self.walldec = tk.StringVar(self.parent)
         self.walldec.set(walldecs[0])
         self.walldec_text = tk.Label(self.parent, text="Wall:").place(x=400,y=10)
