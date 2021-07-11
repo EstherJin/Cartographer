@@ -1,5 +1,6 @@
 import argparse
 import csv
+import ast
 import os
 import os.path
 import tkinter as tk
@@ -60,6 +61,9 @@ class Cell:
 
     def modify_spawn(self):
         self.spawn = (self.spawn + 1) % 2
+
+    def set_spawn(self, spawn):
+        self.spawn = spawn
 
     def get_csv_code(self):
         csv_code = self.tile*1000+self.decorator
@@ -202,10 +206,13 @@ class GUI(tk.Frame):
         self.tile_dropdown = tk.OptionMenu(self.parent, self.tile, "No Change", *tiles).place(x=40,y=10)
 
         obstacles = get_image_file('./images/obstacles')
+        obstacles_cleaned = [(int(ob.split('-')[0]), ob.split('_')[0]) for ob in obstacles]
+        obstacles_cleaned = sorted(obstacles_cleaned, key=lambda x: x[0])
+        obstacles_cleaned = [ob[1] for ob in obstacles_cleaned]
         self.obstacle = tk.StringVar(self.parent)
-        self.obstacle.set(obstacles[0])
+        self.obstacle.set("No Change")
         self.ob_text = tk.Label(self.parent, text="Obstacle:").place(x=190,y=10)
-        self.obstacle_dropdown = tk.OptionMenu(self.parent, self.obstacle, "No Change", *obstacles).place(x=250,y=10)
+        self.obstacle_dropdown = tk.OptionMenu(self.parent, self.obstacle, "No Change", *obstacles_cleaned).place(x=250,y=10)
 
         walldecs = get_image_file('./images/walls/decorations')
         self.walldec = tk.StringVar(self.parent)
@@ -263,10 +270,15 @@ class GUI(tk.Frame):
                 self.parent.walldec_imgs[i].append(ImageTk.PhotoImage(img))
                 img = img.transpose(Image.ROTATE_90)
 
-        self.parent.obstacle_imgs = []
+        self.parent.obstacle_imgs = {}
+        self.obstacle_dict = {}
         for ob in obstacles:
+            num = int(ob.split('-')[0])
+            ob_tup = ast.literal_eval(ob.split('_')[1])
+            self.obstacle_dict[num] = ob_tup
+            
             img_file = Image.open("./images/obstacles/"+ ob +".png")
-            self.parent.obstacle_imgs.append(ImageTk.PhotoImage(img_file))
+            self.parent.obstacle_imgs[num] = ImageTk.PhotoImage(img_file)
 
         self.parent.spawn_imgs = []
         for spawn in spawns:
@@ -325,7 +337,7 @@ class GUI(tk.Frame):
         for i in range(length):
             self.ob_refs.append([])
             for j in range(width):
-                img = self.canvas.create_image(50+16+(i)*32,50+25+(j)*32, anchor="s", image=self.parent.obstacle_imgs[0])
+                img = self.canvas.create_image(50+32+(i)*32,50+(j)*32, anchor="ne", image=self.parent.obstacle_imgs[0])
                 self.canvas.tag_raise(img)
                 self.ob_refs[i].append(img)
                 #self.canvas.tag_bind(self.ob_refs[i][j], '<ButtonPress-1>', self.first_helper(i,j))
@@ -454,16 +466,15 @@ class GUI(tk.Frame):
 
     def updateFloors(self, array):
         tile_count = len(self.parent.tile_imgs)
-        ob_count = len(self.parent.obstacle_imgs)
 
         row_counter = 0
         for row in array:
             col_counter = 0
             for cell in row:
                 tile_int = int(cell[0])
-                ob_int = int(cell[1:])
+                ob_int = int(cell[1:4])
 
-                if tile_int > tile_count or ob_int >= ob_count:
+                if tile_int > tile_count or ob_int not in self.parent.obstacle_imgs.keys():
                     messagebox.showwarning("Error", "Problem importing file: Update images Folder")
                     return
 
@@ -511,7 +522,10 @@ class GUI(tk.Frame):
         else:
             self.canvas.itemconfig(self.tile_refs[leng][wid], image = self.parent.tile_imgs[self.grid.grid[leng][wid].tile - 1])
 
-        self.canvas.itemconfig(self.ob_refs[leng][wid], image = self.parent.obstacle_imgs[self.grid.grid[leng][wid].decorator])
+        ob_num = self.grid.grid[leng][wid].decorator
+        self.canvas.itemconfig(self.ob_refs[leng][wid], image = self.parent.obstacle_imgs[ob_num])
+        ob_tup = self.obstacle_dict[ob_num]
+        self.canvas.coords(self.ob_refs[leng][wid],50+32+(leng)*32+ob_tup[0],50+(wid)*32+ob_tup[1])
         self.canvas.itemconfig(self.spawn_refs[leng][wid], image = self.parent.spawn_imgs[self.grid.grid[leng][wid].spawn])
         return
 
