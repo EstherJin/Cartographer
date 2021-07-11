@@ -4,6 +4,7 @@ Makes Frigid Mapeys
 ### Controls
 Right Click - Erase everything off that one tile (doesn't support right click and hold, if you want that, use the regular eraser)
 'e' key - Toggles enemy spawner
+'z' key - Undo
 
 ### Uploading Pictures
 First, find the directory your images belong to (obstacles, walls, hang etc.)

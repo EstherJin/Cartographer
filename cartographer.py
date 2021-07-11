@@ -5,6 +5,7 @@ import os
 import os.path
 import tkinter as tk
 from tkinter import messagebox
+from collections import deque
 from PIL import Image, ImageTk
 
 def replace_gui(file_name, directory):
@@ -24,7 +25,7 @@ def replace_gui(file_name, directory):
         del gui
         for ele in root.winfo_children():
             ele.destroy()
-        
+
         gui = GUI(root, width, length, directory)
         for i in range(width):
             gui.wallButtonStuff(0, i, walldec=int(csv_reader[length][i]))
@@ -89,6 +90,7 @@ class Grid:
         self.grid = []
         self.wall_row = []
         self.wall_col = []
+        self.stack = deque([], maxlen=25)
 
         for i in range(length):
             self.grid.append([])
@@ -100,6 +102,54 @@ class Grid:
             self.wall_row.append(row)
             col = [0] * width
             self.wall_col.append(col)
+
+    def firstys(self, thing):
+        return [x[:3] for x in thing]
+
+    def secondys(self, thing):
+        for action in thing:
+            x = action[0]
+            y = action[1]
+            type = action[2]
+            val = action[3]
+
+            if type == 'T' and self.grid[x][y].tile != val:
+                return False
+            elif type == 'D' and self.grid[x][y].decorator != val:
+                return False
+            elif type == 'F'and self.grid[x][y].floor != val:
+                return False
+            elif type == 'H' and self.grid[x][y].hang != val:
+                return False
+        return True
+
+
+    def add_to_stack(self, item):
+        cond = False
+        if len(self.stack) != 0:
+            cond = (self.firstys(item) == self.firstys(self.stack[-1]) and self.secondys(item))
+        if not cond:
+            self.stack.append(item)
+
+    def undo(self):
+        if len(self.stack) != 0:
+            item = self.stack.pop()
+            for action in item:
+                x = action[0]
+                y = action[1]
+                type = action[2]
+                val = action[3]
+
+                if type == 'T':
+                    self.grid[x][y].modify_cell_tile(val)
+                elif type == 'D':
+                    self.grid[x][y].modify_cell_decorator(val)
+                elif type == 'F':
+                    self.grid[x][y].modify_cell_floor(val)
+                elif type == 'H':
+                    self.grid[x][y].modify_cell_hang(val)
+            return x, y
+        return -1, -1
 
     def error_check(self):
         ret_err = "No Errors :)"
@@ -436,8 +486,14 @@ class GUI(tk.Frame):
         self.canvas.bind("<ButtonRelease-1>", self.mouseUp)
         self.canvas.bind('<Motion>', self.poll)
         self.canvas.bind_all('e', self.click_spawn)
+        self.canvas.bind_all('z', self.undo)
         self.canvas.bind("<ButtonPress-2>", self.erase)
         self.canvas.bind("<ButtonPress-3>", self.erase)
+
+    def undo(self, event):
+        x, y = self.grid.undo()
+        if x != -1:
+            self.updateGUI(x, y)
 
     def mouseDown(self, event):
         self.mouse_pressed = True
@@ -562,22 +618,30 @@ class GUI(tk.Frame):
         obstacle_val = self.obstacle.get()
         floor_val = self.floor.get()
         hang_val = self.hang.get()
+        undostuffs = []
 
         if tile_val != "No Change":
+            undostuffs.append((leng, wid, 'T', self.grid.grid[leng][wid].tile))
             tile_int = int(tile_val.partition("-")[0])
             self.grid.grid[leng][wid].modify_cell_tile(tile_int)
 
         if obstacle_val != "No Change":
+            undostuffs.append((leng, wid, 'D', self.grid.grid[leng][wid].decorator))
             obstacle_int = int(obstacle_val.partition("-")[0])
             self.grid.grid[leng][wid].modify_cell_decorator(obstacle_int)
 
         if floor_val != "No Change":
+            undostuffs.append((leng, wid, 'F', self.grid.grid[leng][wid].floor))
             floor_int = int(floor_val.partition("-")[0])
             self.grid.grid[leng][wid].modify_cell_floor(floor_int)
 
         if hang_val != "No Change":
+            undostuffs.append((leng, wid, 'H', self.grid.grid[leng][wid].hang))
             h_int = int(hang_val.partition("-")[0])
             self.grid.grid[leng][wid].modify_cell_hang(h_int)
+
+        if undostuffs:
+            self.grid.add_to_stack(undostuffs)
 
         if self.error:
             self.error = False
