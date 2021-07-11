@@ -21,6 +21,10 @@ def replace_gui(file_name, directory):
         for col in csv_reader[0]:
             width += 1
 
+        del gui
+        for ele in root.winfo_children():
+            ele.destroy()
+        
         gui = GUI(root, width, length, directory)
         for i in range(width):
             gui.wallButtonStuff(0, i, walldec=int(csv_reader[length][i]))
@@ -48,7 +52,9 @@ def get_image_file(image_file):
 class Cell:
     def __init__(self):
         self.tile = 1
+        self.floor = 0
         self.decorator = 0
+        self.hang = 0
         self.spawn = 0
         self.error1 = False
         self.error2 = False
@@ -59,16 +65,21 @@ class Cell:
     def modify_cell_decorator(self, decorator):
         self.decorator = decorator
 
+    def modify_cell_floor(self, floor):
+        self.floor = floor
+
+    def modify_cell_hang(self, hang):
+        self.hang = hang
+
     def modify_spawn(self):
-        self.spawn = (self.spawn + 1) % 2
+        self.spawn = (self.spawn + 1) % 4
 
     def set_spawn(self, spawn):
         self.spawn = spawn
 
     def get_csv_code(self):
-        csv_code = self.tile*1000+self.decorator
-        if self.spawn != 0:
-            csv_code = csv_code * 10 + self.spawn
+        csv_code = self.tile*1000000000+self.decorator*1000000+self.floor*1000+self.hang
+        csv_code = csv_code * 10 + self.spawn
         return csv_code
 
 class Grid:
@@ -214,6 +225,24 @@ class GUI(tk.Frame):
         self.ob_text = tk.Label(self.parent, text="Obstacle:").place(x=190,y=10)
         self.obstacle_dropdown = tk.OptionMenu(self.parent, self.obstacle, "No Change", *obstacles_cleaned).place(x=250,y=10)
 
+        floor = get_image_file('./images/floor')
+        floor_cleaned = [(int(ob.split('-')[0]), ob.split('_')[0]) for ob in floor]
+        floor_cleaned = sorted(floor_cleaned, key=lambda x: x[0])
+        floor_cleaned = [ob[1] for ob in floor_cleaned]
+        self.floor = tk.StringVar(self.parent)
+        self.floor.set("No Change")
+        self.floor_text = tk.Label(self.parent, text="Floor:").place(x=10,y=90)
+        self.floor_dropdown = tk.OptionMenu(self.parent, self.floor, "No Change", *floor_cleaned).place(x=50,y=90)
+
+        hang = get_image_file('./images/hang')
+        hang_cleaned = [(int(ob.split('-')[0]), ob.split('_')[0]) for ob in hang]
+        hang_cleaned = sorted(hang_cleaned, key=lambda x: x[0])
+        hang_cleaned = [ob[1] for ob in hang_cleaned]
+        self.hang = tk.StringVar(self.parent)
+        self.hang.set("No Change")
+        self.hang_text = tk.Label(self.parent, text="Hang:").place(x=200,y=90)
+        self.hang_dropdown = tk.OptionMenu(self.parent, self.hang, "No Change", *hang_cleaned).place(x=250,y=90)
+
         walldecs = get_image_file('./images/walls/decorations')
         self.walldec = tk.StringVar(self.parent)
         self.walldec.set(walldecs[0])
@@ -251,7 +280,7 @@ class GUI(tk.Frame):
         self.error = False
 
         self.canvas = tk.Canvas(root, height=100+32*width, width=110+32*length, bg='white')
-        self.canvas.place(x=10,y=100)
+        self.canvas.place(x=10,y=140)
 
         self.parent.wall_imgs = [None] * 8
         wall = Image.open("./images/walls/wall.png")
@@ -276,9 +305,29 @@ class GUI(tk.Frame):
             num = int(ob.split('-')[0])
             ob_tup = ast.literal_eval(ob.split('_')[1])
             self.obstacle_dict[num] = ob_tup
-            
+
             img_file = Image.open("./images/obstacles/"+ ob +".png")
             self.parent.obstacle_imgs[num] = ImageTk.PhotoImage(img_file)
+
+        self.parent.floor_imgs = {}
+        self.floor_dict = {}
+        for f in floor:
+            num = int(f.split('-')[0])
+            f_tup = ast.literal_eval(f.split('_')[1])
+            self.floor_dict[num] = f_tup
+
+            img_file = Image.open("./images/floor/"+ f +".png")
+            self.parent.floor_imgs[num] = ImageTk.PhotoImage(img_file)
+
+        self.parent.hang_imgs = {}
+        self.hang_dict = {}
+        for h in hang:
+            num = int(h.split('-')[0])
+            h_tup = ast.literal_eval(h.split('_')[1])
+            self.hang_dict[num] = h_tup
+
+            img_file = Image.open("./images/hang/"+ h +".png")
+            self.parent.hang_imgs[num] = ImageTk.PhotoImage(img_file)
 
         self.parent.spawn_imgs = []
         for spawn in spawns:
@@ -331,7 +380,14 @@ class GUI(tk.Frame):
             for j in range(width):
                 img = self.canvas.create_image(50+(i)*32,50+(j)*32, anchor="nw", image=self.parent.tile_imgs[0])
                 self.tile_refs[i].append(img)
-                #self.canvas.tag_bind(self.tile_refs[i][j], '<ButtonPress-1>', self.first_helper(i,j))
+
+        self.f_refs = []
+        for i in range(length):
+            self.f_refs.append([])
+            for j in range(width):
+                img = self.canvas.create_image(50+32+(i)*32,50+(j)*32, anchor="ne", image=self.parent.floor_imgs[0])
+                self.canvas.tag_raise(img)
+                self.f_refs[i].append(img)
 
         self.ob_refs = []
         for i in range(length):
@@ -340,7 +396,14 @@ class GUI(tk.Frame):
                 img = self.canvas.create_image(50+32+(i)*32,50+(j)*32, anchor="ne", image=self.parent.obstacle_imgs[0])
                 self.canvas.tag_raise(img)
                 self.ob_refs[i].append(img)
-                #self.canvas.tag_bind(self.ob_refs[i][j], '<ButtonPress-1>', self.first_helper(i,j))
+
+        self.h_refs = []
+        for i in range(length):
+            self.h_refs.append([])
+            for j in range(width):
+                img = self.canvas.create_image(50+32+(i)*32,50+32+(j)*32, anchor="se", image=self.parent.hang_imgs[0])
+                self.canvas.tag_raise(img)
+                self.h_refs[i].append(img)
 
         self.spawn_refs = []
         for i in range(length):
@@ -395,7 +458,7 @@ class GUI(tk.Frame):
 
     def click_spawn(self, event=None):
         x = event.x - 10
-        y = event.y - 100
+        y = event.y - 140
         realx = (x - 50) // 32
         realy = (y - 50) // 32
 
@@ -411,6 +474,8 @@ class GUI(tk.Frame):
 
         if realx >= 0 and realx < self.length and  realy >= 0 and realy < self.width:
             self.grid.grid[realx][realy].modify_cell_decorator(0)
+            self.grid.grid[realx][realy].modify_cell_floor(0)
+            self.grid.grid[realx][realy].modify_cell_hang(0)
             self.updateGUI(realx, realy)
 
     def upload_csv(self):
@@ -473,13 +538,20 @@ class GUI(tk.Frame):
             for cell in row:
                 tile_int = int(cell[0])
                 ob_int = int(cell[1:4])
+                f_int = int(cell[4:7])
+                h_int = int(cell[7:10])
+                s_int = int(cell[10])
 
-                if tile_int > tile_count or ob_int not in self.parent.obstacle_imgs.keys():
+                error = ob_int not in self.parent.obstacle_imgs.keys() or f_int not in self.parent.floor_imgs.keys() or h_int not in self.parent.hang_imgs.keys()
+                if tile_int > tile_count or error or s_int > 3:
                     messagebox.showwarning("Error", "Problem importing file: Update images Folder")
                     return
 
                 self.grid.grid[col_counter][row_counter].modify_cell_tile(tile_int)
                 self.grid.grid[col_counter][row_counter].modify_cell_decorator(ob_int)
+                self.grid.grid[col_counter][row_counter].modify_cell_floor(f_int)
+                self.grid.grid[col_counter][row_counter].modify_cell_hang(h_int)
+                self.grid.grid[col_counter][row_counter].set_spawn(s_int)
 
                 col_counter += 1
             row_counter += 1
@@ -488,6 +560,8 @@ class GUI(tk.Frame):
     def buttonStuff(self, leng, wid):
         tile_val = self.tile.get()
         obstacle_val = self.obstacle.get()
+        floor_val = self.floor.get()
+        hang_val = self.hang.get()
 
         if tile_val != "No Change":
             tile_int = int(tile_val.partition("-")[0])
@@ -496,6 +570,14 @@ class GUI(tk.Frame):
         if obstacle_val != "No Change":
             obstacle_int = int(obstacle_val.partition("-")[0])
             self.grid.grid[leng][wid].modify_cell_decorator(obstacle_int)
+
+        if floor_val != "No Change":
+            floor_int = int(floor_val.partition("-")[0])
+            self.grid.grid[leng][wid].modify_cell_floor(floor_int)
+
+        if hang_val != "No Change":
+            h_int = int(hang_val.partition("-")[0])
+            self.grid.grid[leng][wid].modify_cell_hang(h_int)
 
         if self.error:
             self.error = False
@@ -526,6 +608,17 @@ class GUI(tk.Frame):
         self.canvas.itemconfig(self.ob_refs[leng][wid], image = self.parent.obstacle_imgs[ob_num])
         ob_tup = self.obstacle_dict[ob_num]
         self.canvas.coords(self.ob_refs[leng][wid],50+32+(leng)*32+ob_tup[0],50+(wid)*32+ob_tup[1])
+
+        f_num = self.grid.grid[leng][wid].floor
+        self.canvas.itemconfig(self.f_refs[leng][wid], image = self.parent.floor_imgs[f_num])
+        f_tup = self.floor_dict[f_num]
+        self.canvas.coords(self.f_refs[leng][wid], 50+32+(leng)*32+f_tup[0], 50+(wid)*32+f_tup[1])
+
+        h_num = self.grid.grid[leng][wid].hang
+        self.canvas.itemconfig(self.h_refs[leng][wid], image = self.parent.hang_imgs[h_num])
+        h_tup = self.hang_dict[h_num]
+        self.canvas.coords(self.h_refs[leng][wid], 50+32+(leng)*32+h_tup[0], 50+32+(wid)*32+h_tup[1])
+
         self.canvas.itemconfig(self.spawn_refs[leng][wid], image = self.parent.spawn_imgs[self.grid.grid[leng][wid].spawn])
         return
 
