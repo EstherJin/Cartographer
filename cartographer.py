@@ -5,6 +5,7 @@ import os
 import os.path
 import tkinter as tk
 from tkinter import messagebox
+from tkinter import filedialog
 from collections import deque
 from PIL import Image, ImageTk
 
@@ -249,7 +250,7 @@ class Grid:
 
 
 class GUI(tk.Frame):
-    def __init__(self, parent, length, width, directory=''):
+    def __init__(self, parent, length, width, directory='/'):
         self.parent = parent
         w = str(max(120+32*width,600))
         h = str(210+32*length)
@@ -281,8 +282,8 @@ class GUI(tk.Frame):
         floor_cleaned = [ob[1] for ob in floor_cleaned]
         self.floor = tk.StringVar(self.parent)
         self.floor.set("No Change")
-        self.floor_text = tk.Label(self.parent, text="Floor:").place(x=10,y=90)
-        self.floor_dropdown = tk.OptionMenu(self.parent, self.floor, "No Change", *floor_cleaned).place(x=50,y=90)
+        self.floor_text = tk.Label(self.parent, text="Floor:").place(x=10,y=50)
+        self.floor_dropdown = tk.OptionMenu(self.parent, self.floor, "No Change", *floor_cleaned).place(x=50,y=50)
 
         hang = get_image_file('./images/hang')
         hang_cleaned = [(int(ob.split('-')[0]), ob.split('_')[0]) for ob in hang]
@@ -290,8 +291,8 @@ class GUI(tk.Frame):
         hang_cleaned = [ob[1] for ob in hang_cleaned]
         self.hang = tk.StringVar(self.parent)
         self.hang.set("No Change")
-        self.hang_text = tk.Label(self.parent, text="Hang:").place(x=200,y=90)
-        self.hang_dropdown = tk.OptionMenu(self.parent, self.hang, "No Change", *hang_cleaned).place(x=250,y=90)
+        self.hang_text = tk.Label(self.parent, text="Hang:").place(x=200,y=50)
+        self.hang_dropdown = tk.OptionMenu(self.parent, self.hang, "No Change", *hang_cleaned).place(x=250,y=50)
 
         walldecs = get_image_file('./images/walls/decorations')
         self.walldec = tk.StringVar(self.parent)
@@ -310,27 +311,28 @@ class GUI(tk.Frame):
         self.room_text = tk.Label(self.parent, text="Room:").place(x=655,y=10)
         self.level_dropdown = tk.OptionMenu(self.parent, self.room, *room_type_list).place(x=700,y=10)
 
-        self.dir_text = tk.Label(self.parent, text="Directory:").place(x=10,y=50)
-        self.dir_field = tk.Entry(self.parent)
-        self.dir_field.insert(-1, directory)
-        self.dir_field.place(x=70,y=50)
+        #self.dir_text = tk.Label(self.parent, text="Directory:").place(x=10,y=50)
+        #self.dir_field = tk.Entry(self.parent)
+        #self.dir_field.insert(-1, directory)
+        #self.dir_field.place(x=70,y=50)
+        self.directory = directory
 
-        self.new_text = tk.Label(self.parent, text="Upload File Name:").place(x=200,y=50)
-        self.new_field = tk.Entry(self.parent)
-        self.new_field.place(x=300,y=50)
-        self.new_csv = tk.Button(self.parent, text='Upload CSV', command=self.upload_csv).place(x=410,y=50)
+        #self.new_text = tk.Label(self.parent, text="Upload File Name:").place(x=200,y=50)
+        #self.new_field = tk.Entry(self.parent)
+        #self.new_field.place(x=300,y=50)
+        self.new_csv = tk.Button(self.parent, text='Upload CSV', command=self.upload_csv).place(x=400,y=50)
 
-        self.fn_text = tk.Label(self.parent, text="Save File Name:").place(x=485,y=50)
-        self.fn_field = tk.Entry(self.parent)
-        self.fn_field.place(x=575,y=50)
-        self.save_csv = tk.Button(self.parent, text='Save CSV', command=self.saveys).place(x=695,y=50)
-        self.error_check = tk.Button(self.parent, text='Error Check', command=self.errorCheck).place(x=765,y=50)
+        #self.fn_text = tk.Label(self.parent, text="Save File Name:").place(x=485,y=50)
+        #self.fn_field = tk.Entry(self.parent)
+        #self.fn_field.place(x=575,y=50)
+        self.save_csv = tk.Button(self.parent, text='Save CSV', command=self.saveys).place(x=525,y=50)
+        self.error_check = tk.Button(self.parent, text='Error Check', command=self.errorCheck).place(x=650,y=50)
 
         self.grid = Grid(self.length,self.width)
         self.error = False
 
         self.canvas = tk.Canvas(root, height=100+32*width, width=110+32*length, bg='white')
-        self.canvas.place(x=10,y=140)
+        self.canvas.place(x=10,y=100)
 
         self.parent.wall_imgs = [None] * 8
         wall = Image.open("./images/walls/wall.png")
@@ -514,7 +516,7 @@ class GUI(tk.Frame):
 
     def click_spawn(self, event=None):
         x = event.x - 10
-        y = event.y - 140
+        y = event.y - 100
         realx = (x - 50) // 32
         realy = (y - 50) // 32
 
@@ -535,25 +537,28 @@ class GUI(tk.Frame):
             self.updateGUI(realx, realy)
 
     def upload_csv(self):
-        directory = self.dir_field.get()
-        csv_name = self.new_field.get()
-        if os.path.isfile(directory + csv_name):
-            replace_gui(directory + csv_name, directory)
+        csv_name = filedialog.askopenfilename(initialdir = self.directory, title = "Select a File", filetypes = (("CSV Files","*.csv"),("All","*.*")))
+        if not csv_name:
+            return
+        self.directory = os.path.dirname(csv_name)
+        if os.path.isfile(csv_name):
+            replace_gui(csv_name, self.directory)
         else:
             messagebox.showwarning("Error", "File Not in Directory")
 
     def saveys(self):
-        directory = self.dir_field.get()
-        csv_name = self.fn_field.get()
-        if csv_name == '':
-            csv_name = 'dungeon_level'
-        csv_name += '.csv'
+        csv_name = filedialog.asksaveasfilename(initialdir = self.directory, title = "Select a File", filetypes = (("CSV Files","*.csv"),("All","*.*")))
+        if not csv_name:
+            return
+        if not csv_name.endswith('.csv'):
+            csv_name += '.csv'
+        self.directory = os.path.dirname(csv_name)
 
         level = int(self.level.get())
         room_text = self.room.get()
         room = int(room_text.partition("-")[0])
 
-        self.grid.to_csv(directory+csv_name, level, room)
+        self.grid.to_csv(csv_name, level, room)
 
     def first_helper(self, i,j):
         return lambda event: self.buttonStuff(i,j)
