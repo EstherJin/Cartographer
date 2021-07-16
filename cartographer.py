@@ -9,10 +9,12 @@ from tkinter import filedialog
 from collections import deque
 from PIL import Image, ImageTk
 
-def replace_gui(file_name, directory):
+def replace_gui(file_name, dire):
     global root, gui
     with open(file_name, encoding='utf-8-sig') as csv_file:
         csv_reader = list(csv.reader(csv_file, delimiter=','))
+        rm_tp = int(csv_reader[-1][0])
+        lvl = csv_reader[-3][0]
         csv_reader = csv_reader[1:]
         length = 0
         for row in csv_reader:
@@ -27,7 +29,7 @@ def replace_gui(file_name, directory):
         for ele in root.winfo_children():
             ele.destroy()
 
-        gui = GUI(root, width, length, directory)
+        gui = GUI(root, width, length, directory=dire, lev=lvl, rm_tp=rm_tp)
         for i in range(width):
             gui.wallButtonStuff(0, i, walldec=int(csv_reader[length][i]))
             gui.wallButtonStuff(2, i, walldec=int(csv_reader[length+1][i]))
@@ -250,7 +252,7 @@ class Grid:
 
 
 class GUI(tk.Frame):
-    def __init__(self, parent, length, width, directory='/'):
+    def __init__(self, parent, length, width, directory='/', lev="1", rm_tp=8):
         self.parent = parent
         w = str(max(120+32*width,600))
         h = str(210+32*length)
@@ -301,13 +303,13 @@ class GUI(tk.Frame):
         self.walldec_dropdown = tk.OptionMenu(self.parent, self.walldec, *walldecs).place(x=430,y=10)
 
         self.level = tk.StringVar(self.parent)
-        self.level.set("1")
+        self.level.set(lev)
         self.level_text = tk.Label(self.parent, text="Level:").place(x=550,y=10)
         self.level_dropdown = tk.OptionMenu(self.parent, self.level, "1","2","3","4","5","6","7").place(x=590,y=10)
 
         room_type_list = ["1-Offering", "2-Supply", "3-Trove", "4-Treasure", "5-Trial", "6-MiniBoss", "7-Shop", "8-Combat", "9-Spawn"]
         self.room = tk.StringVar(self.parent)
-        self.room.set(room_type_list[0])
+        self.room.set(room_type_list[rm_tp-1])
         self.room_text = tk.Label(self.parent, text="Room:").place(x=655,y=10)
         self.level_dropdown = tk.OptionMenu(self.parent, self.room, *room_type_list).place(x=700,y=10)
 
