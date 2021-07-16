@@ -247,7 +247,7 @@ class Grid:
             output_writer.writerow(r_col)
 
             output_writer.writerow([level])
-            output_writer.writerow([self.grid[0][self.width//2].tile, self.grid[self.length-1][self.width//2].tile, self.grid[self.length//2][0].tile, self.grid[self.length//2][self.width-1].tile])
+            output_writer.writerow([self.grid[self.length//2][0].tile, self.grid[self.length//2][self.width-1].tile, self.grid[0][self.width//2].tile, self.grid[self.length-1][self.width//2].tile])
             output_writer.writerow([room_type])
 
 
