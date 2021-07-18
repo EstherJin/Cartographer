@@ -520,8 +520,11 @@ class GUI(tk.Frame):
                 self.buttonStuff(realx, realy)
 
     def click_spawn(self, event=None):
-        x = event.x - 10
-        y = event.y - 100
+        px,py = event.widget.winfo_pointerxy()
+        rx,ry = (event.widget.winfo_rootx(), event.widget.winfo_rooty())
+        cx,cy = (px-rx, py-ry)
+        x = cx - 10
+        y = cy - 100
         realx = (x - 50) // 32
         realy = (y - 50) // 32
 
