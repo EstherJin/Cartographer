@@ -346,11 +346,12 @@ class GUI(tk.Frame):
             wall = wall.transpose(Image.ROTATE_90)
             corner = corner.transpose(Image.ROTATE_90)
 
-        self.parent.walldec_imgs = [[], [], [], []]
+        self.parent.walldec_imgs = [{}, {}, {}, {}]
         for w in walldecs:
             img = Image.open("./images/walls/decorations/"+ w +".png")
             for i in range(4):
-                self.parent.walldec_imgs[i].append(ImageTk.PhotoImage(img))
+                num = int(w.split('-')[0])
+                self.parent.walldec_imgs[i][num] = ImageTk.PhotoImage(img)
                 img = img.transpose(Image.ROTATE_90)
 
         self.parent.obstacle_imgs = {}
@@ -383,22 +384,24 @@ class GUI(tk.Frame):
             img_file = Image.open("./images/hang/"+ h +".png")
             self.parent.hang_imgs[num] = ImageTk.PhotoImage(img_file)
 
-        self.parent.spawn_imgs = []
+        self.parent.spawn_imgs = {}
         for spawn in spawns:
             img_file = Image.open("./images/spawn/"+ spawn +".png")
-            self.parent.spawn_imgs.append(ImageTk.PhotoImage(img_file))
+            num = int(spawn.split('-')[0])
+            self.parent.spawn_imgs[num] = ImageTk.PhotoImage(img_file)
 
-        self.parent.tile_imgs = []
-        self.parent.tile_imgs1 = []
-        self.parent.tile_imgs2 = []
+        self.parent.tile_imgs = {}
+        self.parent.tile_imgs1 = {}
+        self.parent.tile_imgs2 = {}
         for ti in tiles:
+            num = int(ti.split('-')[0]) - 1
             img_file = Image.open("./images/tiles/"+ ti +".png")
             img_file = img_file.convert('RGB')
-            self.parent.tile_imgs.append(ImageTk.PhotoImage(img_file))
+            self.parent.tile_imgs[num] = ImageTk.PhotoImage(img_file)
             yellow = tint_image(img_file,'yellow')
-            self.parent.tile_imgs1.append(ImageTk.PhotoImage(yellow))
+            self.parent.tile_imgs1[num] = ImageTk.PhotoImage(yellow)
             red = tint_image(img_file,'red')
-            self.parent.tile_imgs2.append(ImageTk.PhotoImage(red))
+            self.parent.tile_imgs2[num] = ImageTk.PhotoImage(red)
 
         self.wall_refs = [[],[],[],[],[]]
         self.dec_refs = [[],[],[],[]]
