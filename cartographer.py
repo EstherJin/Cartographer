@@ -9,7 +9,6 @@ from tkinter import filedialog
 from collections import deque
 from PIL import Image, ImageTk
 
-#Yay comment
 def replace_gui(file_name, dire):
     global root, gui
     with open(file_name, encoding='utf-8-sig') as csv_file:
@@ -30,7 +29,7 @@ def replace_gui(file_name, dire):
         for ele in root.winfo_children():
             ele.destroy()
 
-        gui = GUI(root, width, length, directory=dire, lev=lvl, rm_tp=rm_tp)
+        gui = GUI(root, width, length, directory=dire, lev=lvl, rm_tp=rm_tp, title=file_name)
         for i in range(width):
             gui.wallButtonStuff(0, i, walldec=int(csv_reader[length][i]))
             gui.wallButtonStuff(2, i, walldec=int(csv_reader[length+1][i]))
@@ -253,8 +252,9 @@ class Grid:
 
 
 class GUI(tk.Frame):
-    def __init__(self, parent, length, width, directory='/', lev="1", rm_tp=8):
+    def __init__(self, parent, length, width, directory='/', lev="1", rm_tp=8, title="*Untitled File"):
         self.parent = parent
+        self.parent.title(title)
         w = str(max(120+32*width,600))
         h = str(210+32*length)
         self.parent.geometry(w + "x" + h)
@@ -559,6 +559,7 @@ class GUI(tk.Frame):
         if not csv_name.endswith('.csv'):
             csv_name += '.csv'
         self.directory = os.path.dirname(csv_name)
+        self.parent.title(csv_name)
 
         level = int(self.level.get())
         room_text = self.room.get()
