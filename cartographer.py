@@ -124,6 +124,8 @@ class Grid:
                 return False
             elif type == 'H' and self.grid[x][y].hang != val:
                 return False
+            elif type == 'S':
+                return False
         return True
 
 
@@ -151,6 +153,8 @@ class Grid:
                     self.grid[x][y].modify_cell_floor(val)
                 elif type == 'H':
                     self.grid[x][y].modify_cell_hang(val)
+                elif type == 'S':
+                    self.grid[x][y].set_spawn(val)
             return x, y
         return -1, -1
 
@@ -314,20 +318,10 @@ class GUI(tk.Frame):
         self.room_text = tk.Label(self.parent, text="Room:").place(x=655,y=10)
         self.level_dropdown = tk.OptionMenu(self.parent, self.room, *room_type_list).place(x=700,y=10)
 
-        #self.dir_text = tk.Label(self.parent, text="Directory:").place(x=10,y=50)
-        #self.dir_field = tk.Entry(self.parent)
-        #self.dir_field.insert(-1, directory)
-        #self.dir_field.place(x=70,y=50)
         self.directory = directory
 
-        #self.new_text = tk.Label(self.parent, text="Upload File Name:").place(x=200,y=50)
-        #self.new_field = tk.Entry(self.parent)
-        #self.new_field.place(x=300,y=50)
         self.new_csv = tk.Button(self.parent, text='Upload CSV', command=self.upload_csv).place(x=400,y=50)
 
-        #self.fn_text = tk.Label(self.parent, text="Save File Name:").place(x=485,y=50)
-        #self.fn_field = tk.Entry(self.parent)
-        #self.fn_field.place(x=575,y=50)
         self.save_csv = tk.Button(self.parent, text='Save CSV', command=self.saveys).place(x=525,y=50)
         self.error_check = tk.Button(self.parent, text='Error Check', command=self.errorCheck).place(x=650,y=50)
 
@@ -419,18 +413,18 @@ class GUI(tk.Frame):
             img_bot = self.canvas.create_image(50+(i)*32,50+(width)*32, anchor="nw", image=self.parent.wall_imgs[2])
             self.wall_refs[0].append(img_top)
             self.wall_refs[2].append(img_bot)
-            self.canvas.tag_bind(self.wall_refs[0][i], '<ButtonPress-1>', self.second_helper(0,i))
-            self.canvas.tag_bind(self.wall_refs[2][i], '<ButtonPress-1>', self.second_helper(2,i))
+            #self.canvas.tag_bind(self.wall_refs[0][i], '<ButtonPress-1>', self.second_helper(0,i))
+            #self.canvas.tag_bind(self.wall_refs[2][i], '<ButtonPress-1>', self.second_helper(2,i))
 
             dec_top = self.canvas.create_image(50+16+(i)*32,18+25, anchor="s", image=self.parent.walldec_imgs[0][0])
             self.canvas.tag_raise(dec_top)
             self.dec_refs[0].append(dec_top)
-            self.canvas.tag_bind(self.dec_refs[0][i], '<ButtonPress-1>', self.second_helper(0,i))
+            #self.canvas.tag_bind(self.dec_refs[0][i], '<ButtonPress-1>', self.second_helper(0,i))
 
             dec_bot = self.canvas.create_image(50+16+(i)*32,50+(width)*32+7, anchor="n", image=self.parent.walldec_imgs[2][0])
             self.canvas.tag_raise(dec_bot)
             self.dec_refs[2].append(dec_bot)
-            self.canvas.tag_bind(self.dec_refs[2][i], '<ButtonPress-1>', self.second_helper(2,i))
+            #self.canvas.tag_bind(self.dec_refs[2][i], '<ButtonPress-1>', self.second_helper(2,i))
 
         self.tile_refs = []
         for i in range(length):
@@ -476,18 +470,18 @@ class GUI(tk.Frame):
             img_r = self.canvas.create_image(50+(length)*32,50+(j)*32, anchor="nw", image=self.parent.wall_imgs[3])
             self.wall_refs[3].append(img_r)
             self.wall_refs[1].append(img_l)
-            self.canvas.tag_bind(self.wall_refs[3][j], '<ButtonPress-1>', self.second_helper(3,j))
-            self.canvas.tag_bind(self.wall_refs[1][j], '<ButtonPress-1>', self.second_helper(1,j))
+            #self.canvas.tag_bind(self.wall_refs[3][j], '<ButtonPress-1>', self.second_helper(3,j))
+            #self.canvas.tag_bind(self.wall_refs[1][j], '<ButtonPress-1>', self.second_helper(1,j))
 
             dec_r = self.canvas.create_image(18+25, 50+16+(j)*32, anchor="e", image=self.parent.walldec_imgs[1][0])
             self.canvas.tag_raise(dec_r)
             self.dec_refs[1].append(dec_r)
-            self.canvas.tag_bind(self.dec_refs[1][j], '<ButtonPress-1>', self.second_helper(1,j))
+            #self.canvas.tag_bind(self.dec_refs[1][j], '<ButtonPress-1>', self.second_helper(1,j))
 
             dec_l = self.canvas.create_image(50+(length)*32+7, 50+16+(j)*32, anchor="w", image=self.parent.walldec_imgs[3][0])
             self.canvas.tag_raise(dec_l)
             self.dec_refs[3].append(dec_l)
-            self.canvas.tag_bind(self.dec_refs[3][j], '<ButtonPress-1>', self.second_helper(3,j))
+            #self.canvas.tag_bind(self.dec_refs[3][j], '<ButtonPress-1>', self.second_helper(3,j))
 
         self.mouse_pressed = False
         self.canvas.bind("<ButtonPress-1>", self.mouseDown)
@@ -517,16 +511,28 @@ class GUI(tk.Frame):
             realx = (x - 50) // 32
             realy = (y - 50) // 32
 
-            if realx >= 0 and realx < self.length and  realy >= 0 and realy < self.width:
+            if realx >= 0 and realx < self.length and realy >= 0 and realy < self.width:
                 self.buttonStuff(realx, realy)
 
-    def click_spawn(self, event=None):
+            if realx == -1 and realy >= 0 and realy < self.width:
+                self.wallButtonStuff(1, realy)
+            if realx == self.length and realy >= 0 and realy < self.width:
+                self.wallButtonStuff(3, realy)
+            if realx >= 0 and realx < self.length and realy == -1:
+                self.wallButtonStuff(0, realx)
+            if realx >= 0 and realx < self.length and realy == self.width:
+                self.wallButtonStuff(2, realx)
+
+
+    def click_spawn(self, event):
         x = event.x - 10
         y = event.y - 100
         realx = (x - 50) // 32
         realy = (y - 50) // 32
 
-        if realx >= 0 and realx < self.length and  realy >= 0 and realy < self.width:
+        if realx >= 0 and realx < self.length and realy >= 0 and realy < self.width:
+            undostuff=[(realx, realy, 'S', self.grid.grid[realx][realy].spawn)]
+            self.grid.add_to_stack(undostuff)
             self.grid.grid[realx][realy].modify_spawn()
             self.updateGUI(realx, realy)
 
@@ -541,6 +547,19 @@ class GUI(tk.Frame):
             self.grid.grid[realx][realy].modify_cell_floor(0)
             self.grid.grid[realx][realy].modify_cell_hang(0)
             self.updateGUI(realx, realy)
+
+        if realx == -1 and realy >= 0 and realy < self.width:
+            self.grid.wall_col[0][realy] = 0
+            self.updateWallGUI(1, realy)
+        if realx == self.length and realy >= 0 and realy < self.width:
+            self.grid.wall_col[1][realy] = 0
+            self.updateWallGUI(3, realy)
+        if realx >= 0 and realx < self.length and realy == -1:
+            self.grid.wall_row[0][realx] = 0
+            self.updateWallGUI(0, realx)
+        if realx >= 0 and realx < self.length and realy == self.width:
+            self.grid.wall_row[1][realx] = 0
+            self.updateWallGUI(2, realx)
 
     def upload_csv(self):
         csv_name = filedialog.askopenfilename(initialdir = self.directory, title = "Select a File", filetypes = (("CSV Files","*.csv"),("All","*.*")))
