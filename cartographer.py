@@ -331,15 +331,22 @@ class GUI(tk.Frame):
         self.canvas = tk.Canvas(root, height=100+32*width, width=110+32*length, bg='white')
         self.canvas.place(x=10,y=100)
 
-        self.parent.wall_imgs = [None] * 8
+        self.parent.wall_imgs = [None] * 12
         wall = Image.open("./images/walls/wall.png")
         corner = Image.open("./images/walls/corner.png")
+        door = Image.open("./images/walls/door.png")
         self.parent.wall_imgs[0] = wall
         for i in range(4):
             self.parent.wall_imgs[i] = ImageTk.PhotoImage(wall)
             self.parent.wall_imgs[i+4] = ImageTk.PhotoImage(corner)
+            self.parent.wall_imgs[i+8] = ImageTk.PhotoImage(door)
             wall = wall.transpose(Image.ROTATE_90)
             corner = corner.transpose(Image.ROTATE_90)
+            door = door.transpose(Image.ROTATE_90)
+
+        self.parent.hover_imgs = []
+        self.parent.hover_imgs.append(ImageTk.PhotoImage(Image.open("./images/clear.png")))
+        self.parent.hover_imgs.append(ImageTk.PhotoImage(Image.open("./images/hover.png")))
 
         self.parent.walldec_imgs = [{}, {}, {}, {}]
         for w in walldecs:
@@ -482,6 +489,28 @@ class GUI(tk.Frame):
             self.canvas.tag_raise(dec_l)
             self.dec_refs[3].append(dec_l)
             #self.canvas.tag_bind(self.dec_refs[3][j], '<ButtonPress-1>', self.second_helper(3,j))
+        door = self.canvas.create_image(50+(length)*16,57, anchor="s", image=self.parent.wall_imgs[8])
+        self.canvas.tag_raise(door)
+        self.wall_refs[4].append(door)
+        door = self.canvas.create_image(57,50+(width)*16, anchor="e", image=self.parent.wall_imgs[9])
+        self.canvas.tag_raise(door)
+        self.wall_refs[4].append(door)
+        door = self.canvas.create_image(50+(length)*16,43+(width)*32, anchor="n", image=self.parent.wall_imgs[10])
+        self.canvas.tag_raise(door)
+        self.wall_refs[4].append(door)
+        door = self.canvas.create_image(43+(length)*32,50+(width)*16, anchor="w", image=self.parent.wall_imgs[11])
+        self.canvas.tag_raise(door)
+        self.wall_refs[4].append(door)
+
+        self.hov_refs = []
+        for i in range(length + 2):
+            self.hov_refs.append([])
+            for j in range(width + 2):
+                img = self.canvas.create_image(18+(i)*32,18+(j)*32, anchor="nw", image=self.parent.hover_imgs[0])
+                self.canvas.tag_raise(img)
+                self.hov_refs[i].append(img)
+                self.canvas.tag_bind(self.hov_refs[i][j], '<Enter>', self.first_helper(i,j, 1))
+                self.canvas.tag_bind(self.hov_refs[i][j], '<Leave>', self.first_helper(i,j, 0))
 
         self.mouse_pressed = False
         self.canvas.bind("<ButtonPress-1>", self.mouseDown)
@@ -586,11 +615,11 @@ class GUI(tk.Frame):
 
         self.grid.to_csv(csv_name, level, room)
 
-    def first_helper(self, i,j):
-        return lambda event: self.buttonStuff(i,j)
+    def first_helper(self, i,j, image_num):
+        return lambda event: self.hovery(i,j, image_num)
 
-    def second_helper(self, rot, i):
-        return lambda event: self.wallButtonStuff(rot,i)
+    def hovery(self, i, j, image_num):
+        self.canvas.itemconfig(self.hov_refs[i][j], image = self.parent.hover_imgs[image_num])
 
     def errorCheck(self):
         has_error, error = self.grid.error_check()
